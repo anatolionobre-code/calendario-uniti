@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="pt"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendário UniTI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Raleway:wght@300;400;600;700&display=swap">
+<style>
+/* Layout: banner azul com título grande em duas cores, depois um calendário semanal (seg-sex x 9 horas) com mapa de calor. */
+:root{
+  --blue-deep:#000099;
+  --blue-night:#00003d;
+  --cyan:#00a8ff;
+  --page:#f1f1f1;
+  --surface:#ffffff;
+  --ink:#10122e;
+  --ink-soft:#5a5d7a;
+  --line:#dcdde8;
+  --heat:0,0,153;
+  --ok:#0a8f5b;
+  --off:#e7e7ee;
+  --font-display:'Raleway','Segoe UI',sans-serif;
+  --font-body:'Open Sans','Segoe UI',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --page:#0a0b24;--surface:#12143a;--ink:#eef0ff;--ink-soft:#a3a7cf;--line:#2a2d63;
+    --heat:0,168,255;--off:#171a44;--ok:#38d39a;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0a0b24;--surface:#12143a;--ink:#eef0ff;--ink-soft:#a3a7cf;--line:#2a2d63;
+  --heat:0,168,255;--off:#171a44;--ok:#38d39a;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font-body);line-height:1.5}
+.hero{background:radial-gradient(1200px 500px at 80% -20%,#1f3cff 0%,transparent 60%),linear-gradient(160deg,var(--blue-deep),var(--blue-night));color:#fff;padding:56px 20px 64px}
+.wrap{max-width:980px;margin:0 auto}
+.eyebrow{font-family:var(--font-display);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:12px;color:#8fd6ff;margin:0 0 14px}
+h1{font-family:var(--font-display);font-weight:300;font-size:clamp(34px,6vw,64px);line-height:1.08;margin:0;text-wrap:balance}
+h1 b{font-weight:600;color:var(--cyan)}
+.lead{max-width:56ch;margin:18px 0 0;color:#dbe2ff;font-size:16px}
+main{padding:0 20px 56px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px}
+.who{margin-top:-32px;position:relative;display:flex;flex-wrap:wrap;gap:14px 20px;align-items:end;box-shadow:0 12px 30px rgba(0,0,40,.18)}
+.who label{display:block;font-family:var(--font-display);font-weight:600;font-size:13px;margin-bottom:6px}
+.who .field{flex:1 1 260px}
+input[type=text]{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:4px;background:var(--page);color:var(--ink)}
+input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.hint{flex:2 1 280px;margin:0;color:var(--ink-soft);font-size:14px}
+.hint.warn{color:#c2410c;font-weight:600}
+.hint .me{color:var(--ink);font-weight:600}
+h2{font-family:var(--font-display);font-weight:600;font-size:22px;margin:0 0 4px}
+.sec{margin-top:36px}
+.sub{margin:0 0 16px;color:var(--ink-soft);font-size:14px}
+.best{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.best .card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.best .card .n{font-family:var(--font-display);font-weight:700;font-size:32px;color:var(--blue-deep);line-height:1}
+:root[data-theme="dark"] .best .card .n{color:var(--cyan)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .best .card .n{color:var(--cyan)}}
+.best .card .d{font-weight:600}
+.best .card .w{font-size:13px;color:var(--ink-soft)}
+.empty{color:var(--ink-soft);font-size:14px;margin:0}
+.weeks{display:flex;flex-direction:column;gap:22px}
+.week{overflow-x:auto}
+.grid{display:grid;grid-template-columns:44px repeat(5,minmax(52px,1fr));gap:4px;min-width:340px}
+.dh{text-align:center;padding:6px 2px 8px;font-family:var(--font-display)}
+.dh .wd{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);display:block}
+.dh .dn{font-size:20px;font-weight:600;line-height:1.1;display:block}
+.dh .tag{font-size:10px;line-height:1.2;color:#c2410c;display:block;font-weight:600}
+.dh.off .dn{color:var(--ink-soft);text-decoration:line-through}
+.hr{font-size:12px;color:var(--ink-soft);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-variant-numeric:tabular-nums}
+.cell{position:relative;height:42px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:0;font-variant-numeric:tabular-nums;transition:transform .08s}
+.cell:hover{transform:translateY(-1px);border-color:var(--cyan)}
+.cell.has{background:rgba(var(--heat),calc(.12 + var(--lvl)*.78));border-color:transparent;color:#fff}
+.cell.has.light{color:var(--ink)}
+.cell.mine{box-shadow:inset 0 0 0 2px var(--cyan),0 0 0 2px var(--cyan)}
+.cell.mine::after{content:"";position:absolute;right:4px;top:4px;width:7px;height:7px;border-radius:50%;background:var(--cyan);border:1.5px solid #fff}
+.cell.top{box-shadow:0 0 0 2px var(--ok)}
+.cell.top.mine{box-shadow:inset 0 0 0 2px var(--cyan),0 0 0 2px var(--ok)}
+.blank{background:var(--off);border-radius:3px;height:42px;opacity:.5}
+.mon{font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--ink-soft);margin:0 0 6px}
+.detail{position:sticky;bottom:0;margin-top:22px;padding-bottom:env(safe-area-inset-bottom,0px)}
+.detail .panel{border-left:4px solid var(--cyan);box-shadow:0 -6px 24px rgba(0,0,40,.14)}
+.detail strong{font-family:var(--font-display)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--page);border:1px solid var(--line);border-radius:999px;padding:2px 12px;font-size:13px}
+.chip.me{border-color:var(--cyan);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--ink-soft);margin:0 0 16px;align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+.btn{font-family:var(--font-display);font-weight:600;font-size:14px;padding:10px 18px;border-radius:4px;border:1px solid var(--blue-deep);background:transparent;color:var(--blue-deep);cursor:pointer}
+:root[data-theme="dark"] .btn{color:var(--cyan);border-color:var(--cyan)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:var(--cyan);border-color:var(--cyan)}}
+.btn:hover{background:rgba(0,168,255,.12)}
+.btn[disabled]{opacity:.4;cursor:default}
+footer{margin-top:28px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;color:var(--ink-soft);font-size:13px}
+.notice{margin:14px 0 0;padding:12px 14px;border-radius:4px;background:#fff4e5;color:#7a3a00;font-size:14px;border:1px solid #f3c88d}
+@media (prefers-reduced-motion:reduce){.cell{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Outubro 2026 · Dias úteis · 9h–18h</p>
+    <h1>Calendário <b>UniTI</b><br>Para equipas desencontradas</h1>
+    <p class="lead">Escreva o seu nome e marque todas as horas em que pode. Veja onde a equipa coincide e escolha a melhor hora para a reunião.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="panel who" aria-label="Quem é você">
+      <div class="field">
+        <label for="name">O seu nome</label>
+        <input type="text" id="name" maxlength="30" autocomplete="off" placeholder="Ex.: Ana Silva">
+      </div>
+      <p class="hint" id="hint">Escreva o seu nome e depois clique nas horas em que está disponível.</p>
+    </section>
+    <div class="notice" id="ro" hidden>Modo de teste: os votos ficam apenas neste computador, porque a base de dados partilhada ainda não está ligada.</div>
+
+    <section class="sec" aria-labelledby="bt">
+      <h2 id="bt">Melhores horas até agora</h2>
+      <p class="sub">As horas em que mais pessoas podem.</p>
+      <div class="best" id="best"><p class="empty">Ainda ninguém marcou horas. Seja a primeira pessoa.</p></div>
+    </section>
+
+    <section class="sec" aria-labelledby="ct">
+      <h2 id="ct">Marque as suas horas</h2>
+      <p class="sub">Clique numa hora para marcar ou desmarcar. O número é a quantidade de pessoas disponíveis.</p>
+      <div class="legend">
+        <span><i style="background:rgba(var(--heat),.2)"></i>Poucas pessoas</span>
+        <span><i style="background:rgba(var(--heat),.9)"></i>Muitas pessoas</span>
+        <span><i style="box-shadow:inset 0 0 0 2px var(--cyan);background:var(--surface)"></i>As suas horas</span>
+        <span><i style="box-shadow:0 0 0 2px var(--ok);background:var(--surface)"></i>Melhor hora</span>
+      </div>
+      <div class="weeks" id="weeks"></div>
+    </section>
+
+    <div class="detail" aria-live="polite">
+      <div class="panel" id="detail"><span class="empty">Passe o rato por cima de uma hora (ou toque nela) para ver quem pode.</span></div>
+    </div>
+
+    <footer>
+      <span>Fins de semana e feriados nacionais ficam de fora. Feriado em outubro: 5 de outubro, Implantação da República.</span>
+      <button class="btn" id="clear" type="button" disabled>Limpar as minhas horas</button>
+    </footer>
+  </div>
+</main>
+
+<script>
+(function(){
+  var YEAR=2026, MONTH=9; // outubro
+  var HOLIDAYS={"2026-10-05":"Feriado"};
+  var HOURS=[9,10,11,12,13,14,15,16,17];
+  var WD=["Seg","Ter","Qua","Qui","Sex"];
+  var WDL=["segunda","terça","quarta","quinta","sexta"];
+  var pad=function(n){return String(n).padStart(2,"0")};
+  var dkey=function(d){return d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate())};
+  var now=new Date(); var todayKey=now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate());
+
+  // Endereço da base de dados Firebase (ver instruções). Enquanto estiver assim, a página corre em modo de teste local.
+  var DB_URL="https://calendario-uniti-default-rtdb.europe-west1.firebasedatabase.app";
+  var online=/^https:\/\//.test(DB_URL); DB_URL=DB_URL.replace(/\/+$/,"");
+  var canWrite=true, myName="", votes={}, raw={}, pending=0; // votes: slot -> {nameKey:displayName}
+  var $=function(id){return document.getElementById(id)};
+  var nameEl=$("name"), hintEl=$("hint"), weeksEl=$("weeks"), bestEl=$("best"), detailEl=$("detail"), clearEl=$("clear");
+
+  function nkey(n){return n.trim().toLowerCase().replace(/\s+/g," ")}
+  function hex(s){return Array.from(new TextEncoder().encode(s)).map(function(b){return pad(b.toString(16)).slice(-2)}).join("")}
+  function slotId(dk,h){return dk.replace(/-/g,"")+"T"+pad(h)}
+  function docId(slot,n){return slot+"__"+hex(nkey(n))}
+  function label(slot){
+    var y=+slot.slice(0,4),m=+slot.slice(4,6)-1,d=+slot.slice(6,8),h=+slot.slice(9,11);
+    var wd=new Date(Date.UTC(y,m,d)).getUTCDay();
+    return WDL[wd-1][0].toUpperCase()+WDL[wd-1].slice(1)+", "+d+" de outubro · "+h+"h–"+(h+1)+"h";
+  }
+
+  // Estrutura do mês: semanas (seg-sex)
+  var weeks=[];
+  (function(){
+    var d=new Date(Date.UTC(YEAR,MONTH,1));
+    var cur=null;
+    while(d.getUTCMonth()===MONTH){
+      var wd=d.getUTCDay();
+      if(wd>=1&&wd<=5){
+        if(!cur||wd===1){cur={days:[null,null,null,null,null]};weeks.push(cur)}
+        cur.days[wd-1]=new Date(d.getTime());
+      }
+      d=new Date(d.getTime()+864e5);
+    }
+  })();
+
+  function slotsOf(){return Object.keys(votes).filter(function(s){return Object.keys(votes[s]).length>0})}
+  function count(s){return votes[s]?Object.keys(votes[s]).length:0}
+  function maxCount(){var m=0;slotsOf().forEach(function(s){m=Math.max(m,count(s))});return m}
+
+  function isMine(s){var k=nkey(myName);return !!(k&&votes[s]&&votes[s][k])}
+
+  function build(){
+    weeksEl.textContent="";
+    weeks.forEach(function(w){
+      var box=document.createElement("div");box.className="week";
+      var g=document.createElement("div");g.className="grid";
+      g.appendChild(document.createElement("div"));
+      w.days.forEach(function(d){
+        var h=document.createElement("div");h.className="dh";
+        if(d){
+          var k=dkey(d),hol=HOLIDAYS[k];
+          if(hol)h.classList.add("off");
+          h.innerHTML='<span class="wd"></span><span class="dn"></span>'+(hol?'<span class="tag"></span>':'');
+          h.children[0].textContent=WD[d.getUTCDay()-1];
+          h.children[1].textContent=d.getUTCDate();
+          if(hol)h.children[2].textContent=hol;
+        }
+        g.appendChild(h);
+      });
+      HOURS.forEach(function(hr){
+        var l=document.createElement("div");l.className="hr";l.textContent=hr+"h";g.appendChild(l);
+        w.days.forEach(function(d){
+          if(!d){var b=document.createElement("div");b.className="blank";g.appendChild(b);return}
+          var k=dkey(d);
+          if(HOLIDAYS[k]||k<todayKey){var o=document.createElement("div");o.className="blank";o.title=HOLIDAYS[k]||"Já passou";g.appendChild(o);return}
+          var s=slotId(k,hr);
+          var c=document.createElement("button");c.type="button";c.className="cell";c.dataset.slot=s;
+          c.addEventListener("click",function(){toggle(s)});
+          c.addEventListener("mouseenter",function(){showDetail(s)});
+          c.addEventListener("focus",function(){showDetail(s)});
+          g.appendChild(c);
+        });
+      });
+      box.appendChild(g);weeksEl.appendChild(box);
+    });
+  }
+
+  var lastDetail=null;
+  function showDetail(s){
+    lastDetail=s;
+    var names=votes[s]?Object.keys(votes[s]).map(function(k){return votes[s][k]}).sort(function(a,b){return a.localeCompare(b,"pt")}):[];
+    detailEl.textContent="";
+    var st=document.createElement("strong");st.textContent=label(s);detailEl.appendChild(st);
+    var p=document.createElement("div");p.style.color="var(--ink-soft)";p.style.fontSize="14px";
+    p.textContent=names.length?(names.length===1?"1 pessoa pode:":names.length+" pessoas podem:"):"Ninguém marcou esta hora ainda.";
+    detailEl.appendChild(p);
+    if(names.length){
+      var ch=document.createElement("div");ch.className="chips";
+      names.forEach(function(n){var c=document.createElement("span");c.className="chip"+(nkey(n)===nkey(myName)?" me":"");c.textContent=n;ch.appendChild(c)});
+      detailEl.appendChild(ch);
+    }
+  }
+
+  function render(){
+    var m=maxCount();
+    var tops=m>0?slotsOf().filter(function(s){return count(s)===m}):[];
+    Array.prototype.forEach.call(weeksEl.querySelectorAll(".cell"),function(c){
+      var s=c.dataset.slot,n=count(s),mine=isMine(s);
+      c.textContent=n?n:"";
+      c.className="cell"+(n?" has":"")+(mine?" mine":"")+(n&&m>1&&n===m?" top":"");
+      if(n===1&&m===1)c.classList.add("top");
+      var lvl=m>0?n/m:0;c.style.setProperty("--lvl",lvl);
+      if(n&&lvl<.45)c.classList.add("light");
+      c.setAttribute("aria-pressed",mine?"true":"false");
+      c.setAttribute("aria-label",label(s)+", "+n+(n===1?" pessoa":" pessoas")+(mine?", marcada por si":""));
+    });
+    // melhores
+    var list=slotsOf().sort(function(a,b){return count(b)-count(a)||(a<b?-1:1)}).slice(0,3);
+    bestEl.textContent="";
+    if(!list.length){var e=document.createElement("p");e.className="empty";e.textContent="Ainda ninguém marcou horas. Seja a primeira pessoa.";bestEl.appendChild(e)}
+    list.forEach(function(s){
+      var c=document.createElement("div");c.className="card";
+      var n=count(s);
+      var a=document.createElement("span");a.className="n";a.textContent=n;
+      var d=document.createElement("span");d.className="d";d.textContent=label(s);
+      var w=document.createElement("span");w.className="w";
+      w.textContent=Object.keys(votes[s]).map(function(k){return votes[s][k]}).sort(function(x,y){return x.localeCompare(y,"pt")}).join(", ");
+      c.appendChild(a);c.appendChild(d);c.appendChild(w);bestEl.appendChild(c);
+    });
+    // hint
+    var mine=slotsOf().filter(isMine).length;
+    hintEl.className="hint";
+    hintEl.textContent="";
+    if(!nkey(myName)){hintEl.textContent="Escreva o seu nome e depois clique nas horas em que está disponível."}
+    else{
+      var sp=document.createElement("span");sp.className="me";sp.textContent=myName.trim();
+      hintEl.appendChild(document.createTextNode("Olá, "));hintEl.appendChild(sp);
+      hintEl.appendChild(document.createTextNode(". Tem "+mine+(mine===1?" hora marcada.":" horas marcadas.")+" Pode voltar quando quiser para alterar."));
+    }
+    clearEl.disabled=!mine||!canWrite;
+    if(lastDetail)showDetail(lastDetail);
+  }
+
+  function toggle(s){
+    if(!nkey(myName)){
+      hintEl.className="hint warn";hintEl.textContent="Escreva primeiro o seu nome para poder marcar horas.";
+      nameEl.focus();return;
+    }
+    showDetail(s);
+    var id=docId(s,myName);
+    var p=isMine(s)?write(id,null):write(id,{slot:s,name:myName.trim().replace(/\s+/g," ")});
+    p.catch(function(){hintEl.className="hint warn";hintEl.textContent="Não foi possível guardar. Tente outra vez daqui a pouco."});
+  }
+
+  clearEl.addEventListener("click",function(){
+    slotsOf().filter(isMine).forEach(function(s){write(docId(s,myName),null).catch(function(){})});
+  });
+
+  // Guardar: atualiza já no ecrã e envia para a base de dados (ou para este computador, em modo de teste)
+  function write(id,obj){
+    if(obj)raw[id]=obj;else delete raw[id];
+    ingest(raw);
+    if(!online){try{localStorage.setItem("uniti-demo-votes",JSON.stringify(raw))}catch(e){}return Promise.resolve()}
+    pending++;
+    return fetch(DB_URL+"/votes/"+id+".json",{method:obj?"PUT":"DELETE",body:obj?JSON.stringify(obj):undefined})
+      .then(function(r){if(!r.ok)throw new Error("http")})
+      .finally(function(){pending--});
+  }
+
+  try{myName=localStorage.getItem("uniti-name")||""}catch(e){}
+  nameEl.value=myName;
+  nameEl.addEventListener("input",function(){
+    myName=nameEl.value;
+    try{localStorage.setItem("uniti-name",myName)}catch(e){}
+    render();
+  });
+
+  build();render();
+
+  function ingest(all){
+    var v={};
+    Object.keys(all).forEach(function(id){
+      var x=all[id];if(!x||!x.slot||!x.name)return;
+      (v[x.slot]=v[x.slot]||{})[nkey(x.name)]=x.name;
+    });
+    votes=v;render();
+  }
+
+  function pull(){
+    if(!online||pending>0||document.hidden)return;
+    fetch(DB_URL+"/votes.json").then(function(r){return r.json()}).then(function(j){
+      if(pending>0)return;
+      raw=j||{};ingest(raw);
+    }).catch(function(){});
+  }
+
+  if(online){pull();setInterval(pull,5000);document.addEventListener("visibilitychange",pull)}
+  else{
+    $("ro").hidden=false;
+    try{raw=JSON.parse(localStorage.getItem("uniti-demo-votes")||"{}")}catch(e){raw={}}
+    ingest(raw);
+  }
+})();
+</script>
+</body>
+</html>
